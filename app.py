@@ -243,60 +243,108 @@ class BulkImageProcessor(tk.Tk):
 
     def _build_options(self, parent):
         self._section_title(parent, "PROCESSING OPTIONS", "BATCH SETTINGS")
-        body = tk.Frame(parent,bg=WHITE)
-        body.pack(fill="both",expand=True,padx=18,pady=15)
 
-        self.max_w=tk.StringVar(value="1600")
-        self.max_h=tk.StringVar(value="1200")
-        self.quality=tk.StringVar(value="85")
-        self.output_format=tk.StringVar(value="WEBP")
-        self.rename_mode=tk.StringVar(value="Sequential Names")
-        self.prefix=tk.StringVar(value="processed_")
+        body = tk.Frame(parent, bg=WHITE)
+        body.pack(fill="both", expand=True, padx=18, pady=10)
 
-        self.output_format.trace_add("write", lambda *_: self._refresh_output_previews())
-        self.rename_mode.trace_add("write", lambda *_: self._refresh_output_previews())
-        self.prefix.trace_add("write", lambda *_: self._refresh_output_previews())
+        self.max_w = tk.StringVar(value="1600")
+        self.max_h = tk.StringVar(value="1200")
+        self.quality = tk.StringVar(value="85")
+        self.output_format = tk.StringVar(value="WEBP")
+        self.rename_mode = tk.StringVar(value="Sequential Names")
+        self.prefix = tk.StringVar(value="processed_")
 
-        self._field(body,"Maximum Width (px)",self.max_w,0,0)
-        self._field(body,"Maximum Height (px)",self.max_h,0,1)
-        self._combo(body,"Output Format",self.output_format,["WEBP (Recommended)","JPG","PNG"],1,0)
-        self._field(body,"Quality (1 - 100)",self.quality,1,1)
-        self._combo(body,"File Naming",self.rename_mode,["Keep Original Names","Sequential Names"],2,0)
-        self._field(body,"Filename Prefix",self.prefix,2,1)
+        # Two compact rows of processing controls.
+        self._field(body, "Maximum Width (px)", self.max_w, 0, 0)
+        self._field(body, "Maximum Height (px)", self.max_h, 0, 1)
+        self._combo(body, "Output Format", self.output_format,
+                    ["WEBP (Recommended)", "JPG", "PNG"], 1, 0)
+        self._field(body, "Quality (1 - 100)", self.quality, 1, 1)
+        self._combo(body, "File Naming", self.rename_mode,
+                    ["Keep Original Names", "Sequential Names"], 2, 0)
+        self._field(body, "Filename Prefix", self.prefix, 2, 1)
 
-        self.keep_ratio=tk.BooleanVar(value=True)
-        self.skip_smaller=tk.BooleanVar(value=True)
-        self.overwrite=tk.BooleanVar(value=False)
-        self.open_after=tk.BooleanVar(value=True)
+        self.keep_ratio = tk.BooleanVar(value=True)
+        self.skip_smaller = tk.BooleanVar(value=True)
+        self.overwrite = tk.BooleanVar(value=False)
+        self.open_after = tk.BooleanVar(value=True)
 
-        for row,var,text in [(3,self.keep_ratio,"Maintain Aspect Ratio"),
-                             (4,self.skip_smaller,"Skip smaller files"),
-                             (3,self.overwrite,"Overwrite existing files"),
-                             (4,self.open_after,"Open output folder")]:
-            col=0 if text in ("Maintain Aspect Ratio","Skip if smaller than target size") else 1
-            tk.Checkbutton(body,text=text,variable=var,bg=WHITE,fg=TEXT,
-                           activebackground=WHITE,selectcolor=GREEN_LIGHT,
-                           font=("Segoe UI",8),anchor="w").grid(row=row,column=col,sticky="w",pady=5)
+        checks_left = tk.Frame(body, bg=WHITE)
+        checks_left.grid(row=3, column=0, sticky="w", padx=5, pady=(3, 0))
 
-        body.grid_columnconfigure(0,weight=1); body.grid_columnconfigure(1,weight=1)
+        checks_right = tk.Frame(body, bg=WHITE)
+        checks_right.grid(row=3, column=1, sticky="w", padx=5, pady=(3, 0))
 
-        self.process_btn=self._button(body,"⚙  PROCESS IMAGES",self.start_processing,True)
-        self.process_btn.configure(font=("Segoe UI",11,"bold"),pady=13)
-        self.process_btn.grid(row=5,column=0,columnspan=2,sticky="ew",pady=(12,4))
+        tk.Checkbutton(
+            checks_left, text="Maintain Aspect Ratio",
+            variable=self.keep_ratio, bg=WHITE, fg=TEXT,
+            activebackground=WHITE, selectcolor=GREEN_LIGHT,
+            font=("Segoe UI", 8), anchor="w"
+        ).pack(anchor="w", pady=1)
 
-        tk.Label(body,text="Tip: Use WEBP for smaller web-ready files. JPG is useful for compatibility.",
-                 bg=WHITE,fg=MUTED,font=("Segoe UI",8),wraplength=385,justify="left").grid(
-                     row=6,column=0,columnspan=2,sticky="w",pady=(4,0))
+        tk.Checkbutton(
+            checks_left, text="Skip smaller files",
+            variable=self.skip_smaller, bg=WHITE, fg=TEXT,
+            activebackground=WHITE, selectcolor=GREEN_LIGHT,
+            font=("Segoe UI", 8), anchor="w"
+        ).pack(anchor="w", pady=1)
+
+        tk.Checkbutton(
+            checks_right, text="Overwrite existing files",
+            variable=self.overwrite, bg=WHITE, fg=TEXT,
+            activebackground=WHITE, selectcolor=GREEN_LIGHT,
+            font=("Segoe UI", 8), anchor="w"
+        ).pack(anchor="w", pady=1)
+
+        tk.Checkbutton(
+            checks_right, text="Open output folder",
+            variable=self.open_after, bg=WHITE, fg=TEXT,
+            activebackground=WHITE, selectcolor=GREEN_LIGHT,
+            font=("Segoe UI", 8), anchor="w"
+        ).pack(anchor="w", pady=1)
+
+        body.grid_columnconfigure(0, weight=1)
+        body.grid_columnconfigure(1, weight=1)
+
+        # Dedicated button area. Keeping it outside the grid rows prevents
+        # the button from being clipped when the application is maximized.
+        button_area = tk.Frame(body, bg=WHITE)
+        button_area.grid(
+            row=4, column=0, columnspan=2,
+            sticky="ew", padx=0, pady=(8, 0)
+        )
+
+        self.process_btn = self._button(
+            button_area, "⚙  PROCESS IMAGES",
+            self.start_processing, True
+        )
+        self.process_btn.configure(
+            font=("Segoe UI", 10, "bold"),
+            pady=10
+        )
+        self.process_btn.pack(fill="x")
+
+        # Compact helper text below the button.
+        tk.Label(
+            body,
+            text="WEBP is recommended for smaller web-ready files.",
+            bg=WHITE,
+            fg=MUTED,
+            font=("Segoe UI", 7)
+        ).grid(
+            row=5, column=0, columnspan=2,
+            sticky="w", padx=2, pady=(5, 0)
+        )
 
     def _field(self,parent,label,var,row,col):
         f=tk.Frame(parent,bg=WHITE)
-        f.grid(row=row,column=col,sticky="ew",padx=5,pady=7)
+        f.grid(row=row,column=col,sticky="ew",padx=5,pady=3)
         tk.Label(f,text=label,bg=WHITE,fg=TEXT,font=("Segoe UI",8,"bold")).pack(anchor="w")
         ttk.Entry(f,textvariable=var).pack(fill="x",pady=(4,0))
 
     def _combo(self,parent,label,var,values,row,col):
         f=tk.Frame(parent,bg=WHITE)
-        f.grid(row=row,column=col,sticky="ew",padx=5,pady=7)
+        f.grid(row=row,column=col,sticky="ew",padx=5,pady=3)
         tk.Label(f,text=label,bg=WHITE,fg=TEXT,font=("Segoe UI",8,"bold")).pack(anchor="w")
         cb=ttk.Combobox(f,textvariable=var,values=values,state="readonly")
         cb.pack(fill="x",pady=(4,0))
